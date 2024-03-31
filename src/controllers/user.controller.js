@@ -93,4 +93,26 @@ const registerUser = asyncHandler (async(req , res) => {
 
 })
 
-export default registerUser
+const loginUser = asyncHandler (async(req , res) => {
+    // Step 1 - get data from req.body
+    // Step 2 - username or email 
+    // Step 3 - find the user according to the given username or email
+    // Step 4 - check the given password is correct or not
+    // Step 5 - if the password is correct than genarate the access and refresh token
+    // Step 6 - send cookies
+
+    // Step 1 - get data from req.body
+    const {email , password , username} = req.body
+
+    // Step 2 - username or email
+    if(!email || !username){
+        throw new ApiError(400 , "email and username is required to login")
+    }
+    
+    // Step 3 - find the user according to the given username or email    
+    const user = await User.findOne({
+        $or: [{email} , {username}]
+    })
+})
+
+export {registerUser , loginUser}
