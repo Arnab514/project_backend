@@ -93,12 +93,29 @@ const registerUser = asyncHandler (async(req , res) => {
 
 })
 
+// method generating access and refresh token
+const generateAccessAndToken = async(userid) => {
+    try {
+        const user = User.findById(userid)
+        const accessToken = user.generateAccessAndToken()
+        const refreshToken = user.generateRefreshToken()
+
+        user.refreshToken = refreshToken
+        await user.save({validateBeforeSave : false})
+
+        return {accessToken , refreshToken}
+    } 
+    catch (error) {
+        throw new ApiError(500 , "Something went wrong while generating the access and refresh token")
+    }
+}
+
 const loginUser = asyncHandler (async(req , res) => {
     // Step 1 - get data from req.body
     // Step 2 - username or email 
     // Step 3 - find the user according to the given username or email
     // Step 4 - check the given password is correct or not
-    // Step 5 - if the password is correct than genarate the access and refresh token
+    // Step 5 - if the password is correct than generate the access and refresh token
     // Step 6 - send cookies
 
     // Step 1 - get data from req.body
@@ -113,6 +130,20 @@ const loginUser = asyncHandler (async(req , res) => {
     const user = await User.findOne({
         $or: [{email} , {username}]
     })
+
+    if (!user) {
+        throw new ApiError(404 , "User does not exist")
+    }
+
+    // Step 4 - check the given password is correct or not
+    const isPasswordValid = await user.isPasswordCorrect(password)
+
+    if (!isPasswordValid) {
+        throw new ApiError(401 , "Invalid user credentials, password is incorrect")
+    }
+
+    // Step 5 - if the password is correct than generate the access and refresh token
+    const {accessToken , refreshToken} = await generateAccessAndToken(user._id)
 })
 
 export {registerUser , loginUser}
