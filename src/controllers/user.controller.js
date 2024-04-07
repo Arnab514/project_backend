@@ -94,10 +94,10 @@ const registerUser = asyncHandler (async(req , res) => {
 })
 
 // method generating access and refresh token
-const generateAccessAndToken = async(userid) => {
+const generateAccessAndRefreshToken = async(userId) => {
     try {
-        const user = User.findById(userid)
-        const accessToken = user.generateAccessAndToken()
+        const user = await User.findById(userId)
+        const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
 
         user.refreshToken = refreshToken
@@ -143,7 +143,7 @@ const loginUser = asyncHandler (async(req , res) => {
     }
 
     // Step 5 - if the password is correct than generate the access and refresh token
-    const {accessToken , refreshToken} = await generateAccessAndToken(user._id)
+    const {accessToken , refreshToken} = await generateAccessAndRefreshToken(user._id)
 
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
 
@@ -153,16 +153,18 @@ const loginUser = asyncHandler (async(req , res) => {
     }
 
     // Step 6 - send cookies
-    res
+    return res
     .status(200)
     .cookie("accessToken" , accessToken , options)
     .cookie("refreshToken" , refreshToken , options)
     .json(
-        200,
-        {
-            user: loggedInUser , accessToken , refreshToken
-        },
-        "User logged in successfully"
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser , accessToken , refreshToken
+            },
+            "User logged in successfully"
+        )
     )
 })
 
@@ -170,8 +172,8 @@ const logoutUser = asyncHandler (async(req , res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1
             }
         },
         {
