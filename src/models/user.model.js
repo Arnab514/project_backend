@@ -1,6 +1,7 @@
 import mongoose, {Schema} from "mongoose";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
+import { ApiError } from "../utils/ApiError.js";
 
 const userSchema = new Schema(
     {
@@ -52,13 +53,12 @@ const userSchema = new Schema(
         refreshToken: {
             type : String
         }
-    } , {
+    } , 
+    {
         timestamps : true
     }
 )
-
-userSchema.pre("save" , async function(next){
-    // if(this.isModified("password")){
+// if(this.isModified("password")){
     //     this.password = bcrypt.hash(this.password)
     //     next()
     // }
@@ -66,19 +66,29 @@ userSchema.pre("save" , async function(next){
     
     // both of these can be done for encrypting the password
 
-    if(!this.isModified("password")) return next() 
-    
-    this.password = bcrypt.hash(this.password , 10)
-    next()
-})
 
-userSchema.methods.isPasswordCorrect = async function(password){
-    return await bcrypt.compare(password , this.password)
-    // checking the given password and the encrypted passwords are same or not
-}
+    userSchema.pre("save", async function (next) {
+        try {
+            if(!this.isModified("password")) return next();
+        
+            this.password = await bcrypt.hash(this.password, 10)
+            return next()
+        } catch (error) {
+            return next(error)
+        }
+    })
+    
+    userSchema.methods.isPasswordCorrect = async function(password){
+        try {
+            return await bcrypt.compare(password, this.password)
+        } catch (error) {
+            console.error('Error comparing passwords:', error)
+            // throw new ApiError(300 , "error happens while comparing")
+        }
+    }
 
 userSchema.methods.generateAccessToken = function(){
-    jwt.sign(
+    return jwt.sign(
         {
             _id : this._id,
             email : this.email,
@@ -92,7 +102,7 @@ userSchema.methods.generateAccessToken = function(){
     )
 }
 userSchema.methods.generateRefreshToken = function(){
-    jwt.sign(
+    return jwt.sign(
         {
             _id : this._id,
         },
