@@ -1,7 +1,7 @@
 import mongoose, {Schema} from "mongoose";
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken";
-import { ApiError } from "../utils/ApiError.js";
+// import { ApiError } from "../utils/ApiError.js";
 
 const userSchema = new Schema(
     {
@@ -27,15 +27,16 @@ const userSchema = new Schema(
             required : true,
             lowercase : true,
             trim : true,
+            index : true,
         },
 
         avatar: {
-            type : String, 
+            type : String, //cloudinary URL
             required : true,
         },
 
         coverImage: {
-            type : String
+            type : String  //cloudinary URL
         },
 
         watchHistory: [
@@ -72,8 +73,10 @@ const userSchema = new Schema(
             if(!this.isModified("password")) return next();
         
             this.password = await bcrypt.hash(this.password, 10)
-            return next()
-        } catch (error) {
+            //return next()
+            next()
+        } 
+        catch (error) {
             return next(error)
         }
     })
